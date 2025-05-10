@@ -12,10 +12,7 @@ import (
 
 func main() {
 	// Загружаем файл окружения
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("No .env file found")
-	}
+	godotenv.Load()
 
 	db_conn := os.Getenv("DB")
 	if db_conn == "" {
@@ -32,5 +29,6 @@ func main() {
 
 	// Запускаем API
 	api := api.New(store)
-	http.ListenAndServe(":80", api.Router())
+	log.Print("Starting server...")
+	http.ListenAndServe(":8080", api.Router())
 }
