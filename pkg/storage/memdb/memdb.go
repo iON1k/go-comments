@@ -41,3 +41,7 @@ func (s *Store) AddSubcomment(subcomment models.Comment) error {
 	s.c.Subcomments[subcomment.Parent] = subcomments
 	return nil
 }
+
+func (s *Store) RawNewsComments() models.NewsComments {
+	return s.c
+}

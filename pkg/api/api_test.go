@@ -11,39 +11,12 @@ import (
 	"testing"
 )
 
-func TestAddComment(t *testing.T) {
-	db := memdb.New()
-	api := New(db)
-
-	req_json := `
-	{"news_id": 1, "content":"Test"}
-	`
-	req := httptest.NewRequest(http.MethodPost, "/comments", strings.NewReader(req_json))
-	resp := httptest.NewRecorder()
-	api.router.ServeHTTP(resp, req)
-
-	if !(resp.Code == http.StatusOK) {
-		t.Fatal("Wrong status code")
-	}
+type TestContext struct {
+	api *API
+	db  *memdb.Store
 }
 
-func TestAddSubcomment(t *testing.T) {
-	db := memdb.New()
-	api := New(db)
-
-	req_json := `
-	{"parent": 1, "content":"Test"}
-	`
-	req := httptest.NewRequest(http.MethodPost, "/comments", strings.NewReader(req_json))
-	resp := httptest.NewRecorder()
-	api.router.ServeHTTP(resp, req)
-
-	if !(resp.Code == http.StatusOK) {
-		t.Fatal("Wrong status code")
-	}
-}
-
-func TestGetComments(t *testing.T) {
+func setup(_ *testing.T) TestContext {
 	db := memdb.New()
 	db.AddComment(models.Comment{ID: 1, Content: "Comment1"})
 	db.AddComment(models.Comment{ID: 2, Content: "Comment2"})
@@ -51,11 +24,57 @@ func TestGetComments(t *testing.T) {
 	db.AddSubcomment(models.Comment{ID: 4, Parent: 2, Content: "Subcomment2"})
 	api := New(db)
 
+	return TestContext{api, db}
+}
+
+func TestAddComment(t *testing.T) {
+	ctx := setup(t)
+
+	req_json := `
+	{"news_id": 1, "content":"Test"}
+	`
+	req := httptest.NewRequest(http.MethodPost, "/comments", strings.NewReader(req_json))
+	resp := httptest.NewRecorder()
+	ctx.api.router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatal("Wrong status code")
+	}
+
+	news_c := ctx.db.RawNewsComments()
+	if len(news_c.Comments) != 3 || news_c.Comments[2].News != 1 || news_c.Comments[2].Content != "Test" {
+		t.Fatal("Wrong data in DB")
+	}
+}
+
+func TestAddSubcomment(t *testing.T) {
+	ctx := setup(t)
+
+	req_json := `
+	{"parent": 3, "content":"Test"}
+	`
+	req := httptest.NewRequest(http.MethodPost, "/comments", strings.NewReader(req_json))
+	resp := httptest.NewRecorder()
+	ctx.api.router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatal("Wrong status code")
+	}
+
+	news_c := ctx.db.RawNewsComments()
+	if len(news_c.Subcomments) != 3 || news_c.Subcomments[3][0].Content != "Test" {
+		t.Fatal("Wrong data in DB")
+	}
+}
+
+func TestGetComments(t *testing.T) {
+	ctx := setup(t)
+
 	req := httptest.NewRequest(http.MethodGet, "/comments?news_id=1", nil)
 	resp := httptest.NewRecorder()
-	api.router.ServeHTTP(resp, req)
+	ctx.api.router.ServeHTTP(resp, req)
 
-	if !(resp.Code == http.StatusOK) {
+	if resp.Code != http.StatusOK {
 		t.Fatal("Wrong status code")
 	}
 
