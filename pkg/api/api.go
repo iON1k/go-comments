@@ -56,14 +56,19 @@ func (api *API) getComments(w http.ResponseWriter, r *http.Request) {
 func (api *API) addComment(w http.ResponseWriter, r *http.Request) {
 	var req models.AddCommentRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil || req.News == nil && req.Parent == nil {
+	if err != nil {
 		http.Error(w, "Body decoding error", http.StatusBadRequest)
 		return
 	}
 
-	if req.Parent != nil {
-		api.store.AddSubcomment(models.Comment{Parent: *req.Parent, Content: req.Content})
+	if req.News == 0 && req.Parent == 0 {
+		http.Error(w, "Either news id or parent expected", http.StatusBadRequest)
+		return
+	}
+
+	if req.Parent != 0 {
+		api.store.AddSubcomment(models.Comment{Parent: req.Parent, Content: req.Content})
 	} else {
-		api.store.AddComment(models.Comment{News: *req.News, Content: req.Content})
+		api.store.AddComment(models.Comment{News: req.News, Content: req.Content})
 	}
 }
