@@ -32,11 +32,11 @@ func (api *API) Router() *mux.Router {
 }
 
 func (api *API) endpoints() {
-	api.router.HandleFunc("/comments", api.getComments).Methods(http.MethodGet)
-	api.router.HandleFunc("/comments", api.addComment).Methods(http.MethodPost)
+	api.router.Methods(http.MethodGet).Path("/comments").HandlerFunc(api.commentsList)
+	api.router.Methods(http.MethodPost).Path("/comments").HandlerFunc(api.addComment)
 }
 
-func (api *API) getComments(w http.ResponseWriter, r *http.Request) {
+func (api *API) commentsList(w http.ResponseWriter, r *http.Request) {
 	newsIdStr := r.URL.Query().Get("news_id")
 	newsId, err := strconv.Atoi(newsIdStr)
 	if err != nil {
